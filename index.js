@@ -1,8 +1,12 @@
 const puppeteer = require("puppeteer");
+var fs = require("fs");
+const { pathToFileURL } = require("url");
 
 (async () => {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
+    page.on("console", (consoleObj) => console.log(consoleObj.text()));
+
     await page.goto("https://coinmarketcap.com/");
     const coin_urls = await page.evaluate(() => {
         const regex = /https:\/\/coinmarketcap\.com\/currencies\/[a-zA-Z0-9-_]{1,}\/$/m;
@@ -14,47 +18,68 @@ const puppeteer = require("puppeteer");
 
         return arr;
     });
-    
-    const data = coin_urls.map(async (url) =>{
-        await age.goto(url)
-        const coin_data = await page.evaluate(() => {
-            
-            table = document.getElementsByClassName('cmc-table')[0]
-            // headers = table.tHead.children
-            rows = table.tBodies[0].children
 
+    for (const url of coin_urls) {
+        console.log(url);
+        try {
+            await page.goto(url, {"waitUntil" : "networkidle0"});
+        } catch (err) {
+            console.log(err);
+        }
+
+        await page.click('#__next > div > div.sc-57oli2-0.dEqHl.cmc-body-wrapper > div > div.sc-16r8icm-0.hKZfDX.container > div > div > div.hrfjxe-0.kFcBuZ > span > button')
+        // '#__next > div > div.sc-57oli2-0.dEqHl.cmc-body-wrapper > div > div.sc-16r8icm-0.hKZfDX.container > div > div > div.hrfjxe-0.kFcBuZ > span > button'
+        await page.click('[data-tippy-root] > div > div.tippy-content > div > div > div.pickers___166Od > div.predefinedRanges___1WDIZ > ul > li:nth-child(5)')
+
+        await page.click('[data-tippy-root] > div > div.tippy-content > div > div > div.footer___12pdF > span > button')
+
+        await new Promise((r) => setTimeout(r, 2000));
+
+        const coin_data = await page.evaluate(() => {
+
+            table = document.getElementsByClassName("cmc-table")[0];
+            rows = table.tBodies[0].children;
+            console.log(rows.length)
             var csv = [];
             for (var i = 0; i < rows.length; i++) {
-                var row = [], cols = rows[i].querySelectorAll('td, th');
+                var row = [],
+                    cols = rows[i].querySelectorAll("td, th");
                 for (var j = 0; j < cols.length; j++) {
-                    var data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, '').replace(/(\s\s)/gm, ' ')
-                    
+                    var data = cols[j].innerText
+                        .replace(/(\r\n|\n|\r)/gm, "")
+                        .replace(/(\s\s)/gm, " ");
+
                     data = data.replace(/"/g, '""');
-                    
+
                     row.push('"' + data + '"');
                 }
-                csv.push(row.join(','));
+                csv.push(row.join(","));
             }
-
-            const csv_string = csv.join('\n');
-
-            var link = document.createElement('a');
-            // link.style.display = 'none';
-            // link.setAttribute('target', '_blank');
-            // link.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv_string));
-            // link.setAttribute('download', filename);
-            // document.body.appendChild(link);
-            // link.click();
-            // document.body.removeChild(link);
-
-            return csv_string
+            const csv_string = csv.join("\n");
+            return csv_string;
         });
 
-        return coin_data
-    })
+        coin_name = url
+            .replace("https://coinmarketcap.com/currencies/", "")
+            .replace("/historical-data", "");
+
+        if (coin_data.length > 2) {
+            console.log("SUCCESS");
+        } else {
+            console.log("FAILURE");
+        }
+
+        // console.log(coin_name)
+        // console.log(coin_data)
+
+        filepath = `./csvs/${coin_name}.csv`;
+
+        await fs.writeFile(filepath, coin_data, (err) => {
+            if (err) console.log(err);
+            console.log(`${coin_name} has been saved!`);
+        });
+    }
 
     browser.close();
     return data;
 })();
-
-
