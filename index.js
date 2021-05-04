@@ -26,9 +26,9 @@ const { pathToFileURL } = require("url");
         } catch (err) {
             console.log(err);
         }
+        
+        await page.click('button.sc-1ejyco6-0.gQqumm')
 
-        await page.click('#__next > div > div.sc-57oli2-0.dEqHl.cmc-body-wrapper > div > div.sc-16r8icm-0.hKZfDX.container > div > div > div.hrfjxe-0.kFcBuZ > span > button')
-        // '#__next > div > div.sc-57oli2-0.dEqHl.cmc-body-wrapper > div > div.sc-16r8icm-0.hKZfDX.container > div > div > div.hrfjxe-0.kFcBuZ > span > button'
         await page.click('[data-tippy-root] > div > div.tippy-content > div > div > div.pickers___166Od > div.predefinedRanges___1WDIZ > ul > li:nth-child(5)')
 
         await page.click('[data-tippy-root] > div > div.tippy-content > div > div > div.footer___12pdF > span > button')
