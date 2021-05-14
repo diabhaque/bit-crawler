@@ -2,23 +2,30 @@ const puppeteer = require("puppeteer");
 var fs = require("fs");
 const { pathToFileURL } = require("url");
 
+const number_of_pages = 5
+
 (async () => {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
     page.on("console", (consoleObj) => console.log(consoleObj.text()));
+    
+    var coin_urls = [];
+        
+    for(var i = 1; i <= number_of_pages; i++){
+        await page.goto(`https://coinmarketcap.com/?page=${i}`);
+        const page_coin_urls = await page.evaluate(() => {
+            const regex = /https:\/\/coinmarketcap\.com\/currencies\/[a-zA-Z0-9-_]{1,}\/$/m;
 
-    await page.goto("https://coinmarketcap.com/");
-    const coin_urls = await page.evaluate(() => {
-        const regex = /https:\/\/coinmarketcap\.com\/currencies\/[a-zA-Z0-9-_]{1,}\/$/m;
+            const arr = Array.from(document.getElementsByTagName("a"))
+                .filter((element) => element.href.match(regex))
+                .map((el) => el.href + "historical-data")
+                .filter((v, i, a) => a.indexOf(v) === i);
 
-        const arr = Array.from(document.getElementsByTagName("a"))
-            .filter((element) => element.href.match(regex))
-            .map((el) => el.href + "historical-data")
-            .filter((v, i, a) => a.indexOf(v) === i);
-
-        return arr;
-    });
-
+            return arr;
+        });    
+        coin_urls = coin_urls.concat(page_coin_urls);
+    }
+    
     for (const url of coin_urls) {
         console.log(url);
         try {
